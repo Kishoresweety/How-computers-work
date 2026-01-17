@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journey of Code: High Level to Hardware</title>
+    <style>
+        :root {
+            --bg-color: #1e1e2e;
+            --text-color: #cdd6f4;
+            --accent: #89b4fa;
+            --box-bg: #313244;
+            --success: #a6e3a1;
+            --highlight: #f38ba8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, h2 { color: var(--accent); }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* Editor Section */
+        .editor-section {
+            background: var(--box-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: #181825;
+            color: var(--success);
+            border: 1px solid #45475a;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            resize: none;
+        }
+
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+
+        #btn-run { background-color: var(--accent); color: #1e1e2e; }
+        #btn-run:hover { transform: scale(1.05); }
+
+        /* Visualization Section */
+        .viz-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .layer {
+            background: var(--box-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid var(--accent);
+            position: relative;
+            min-height: 80px;
+            transition: all 0.3s;
+        }
+
+        .layer h3 { margin-top: 0; margin-bottom: 5px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+        
+        .data-packet {
+            display: inline-block;
+            padding: 5px 10px;
+            background: var(--highlight);
+            color: #1e1e2e;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 14px;
+            position: absolute;
+            transition: all 0.5s ease-in-out;
+            box-shadow: 0 0 10px var(--highlight);
+        }
+
+        .code-display { font-family: monospace; white-space: pre-wrap; color: #fab387; font-size: 14px;}
+        
+        /* Specific Components */
+        #compiler-view { border-color: #fab387; }
+        #ram-view { border-color: #f9e2af; display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;}
+        .bit-cell { background: #45475a; height: 20px; border-radius: 2px; }
+        .bit-cell.active { background: var(--success); box-shadow: 0 0 5px var(--success); }
+        
+        #cpu-view { border-color: #a6e3a1; display: flex; justify-content: space-around; align-items: center; }
+        .cpu-part { border: 1px solid #585b70; padding: 10px; border-radius: 5px; text-align: center; min-width: 80px;}
+        
+        #hardware-view { border-color: #cba6f7; }
+        .gate-diagram { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 10px;}
+        .gate { width: 40px; height: 40px; border: 2px solid #cba6f7; border-radius: 0 50% 50% 0; display: flex; align-items: center; justify-content: center;}
+        .wire { height: 2px; width: 30px; background: #585b70; }
+        .wire.on { background: var(--highlight); box-shadow: 0 0 8px var(--highlight); }
+
+        .status-log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #11111b;
+            color: #a6adc8;
+            font-family: monospace;
+            font-size: 12px;
+            height: 100px;
+            overflow-y: auto;
+            border-top: 1px solid #45475a;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>How A Computer Runs Code</h1>
+
+    <div class="container">
+        <div class="editor-section">
+            <h3>1. User Space (High Level)</h3>
+            <p style="font-size: 0.9em; opacity: 0.8;">Write a simple math operation:</p>
+            <textarea id="user-code">sum = 10 + 5</textarea>
+            <div class="controls">
+                <button id="btn-run" onclick="startSimulation()">Compile & Run</button>
+            </div>
+            <div class="status-log" id="log">
+                > System Ready...
+            </div>
+        </div>
+
+        <div class="viz-section">
+            
+            <div class="layer" id="compiler-view">
+                <h3>2. Compiler / Interpreter</h3>
+                <div id="assembly-code" class="code-display">Waiting for input...</div>
+            </div>
+
+            <div class="layer" id="ram-view-container">
+                <h3>3. OS Kernel & Memory (RAM)</h3>
+                <div style="font-size: 0.8em; margin-bottom: 5px;">Binary loaded into address space:</div>
+                <div id="ram-view">
+                    </div>
+            </div>
+
+            <div class="layer" id="cpu-view">
+                <h3>4. CPU (Fetch-Decode-Execute)</h3>
+                <div class="cpu-part" id="cu">Control Unit<br><span style="font-size:0.8em; color:#fab387">IDLE</span></div>
+                <div class="cpu-part" id="alu">ALU<br><span style="font-size:0.8em; color:#fab387">IDLE</span></div>
+                <div class="cpu-part" id="registers">Registers<br><span style="font-size:0.8em; color:#fab387">AX: 0</span></div>
+            </div>
+
+            <div class="layer" id="hardware-view">
+                <h3>5. Transistors & Logic Gates</h3>
+                <div style="text-align: center; font-size: 0.8em;">Physical Logic (AND Gate Simulation)</div>
+                <div class="gate-diagram">
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <div class="wire" id="wire-a"></div>
+                        <div class="wire" id="wire-b"></div>
+                    </div>
+                    <div class="gate">AND</div>
+                    <div class="wire" id="wire-out"></div>
+                    <div id="transistor-bulb" style="width:15px; height:15px; border-radius:50%; background:#45475a; border:1px solid #fff;"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const logBox = document.getElementById('log');
+        
+        function log(msg) {
+            logBox.innerHTML += `> ${msg}<br>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        async function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function startSimulation() {
+            const code = document.getElementById('user-code').value;
+            const assemblyDisplay = document.getElementById('assembly-code');
+            
+            // RESET
+            logBox.innerHTML = "> Starting Execution Process...<br>";
+            document.querySelectorAll('.bit-cell').forEach(c => c.remove());
+            resetHardware();
+
+            // STEP 1: COMPILATION
+            log("Compiler: Parsing High-Level Code...");
+            await wait(800);
+            
+            // Mock translation logic
+            let val1 = 10, val2 = 5; 
+            if(code.match(/\d+/g)) {
+                const nums = code.match(/\d+/g);
+                val1 = parseInt(nums[0]) || 0;
+                val2 = parseInt(nums[1]) || 0;
+            }
+            
+            const assembly = `MOV AX, ${val1}\nADD AX, ${val2}\nSTORE AX`;
+            assemblyDisplay.innerHTML = assembly;
+            assemblyDisplay.style.color = "#f38ba8";
+            log("Compiler: Converted to Assembly Language.");
+            await wait(1000);
+
+            // STEP 2: ASSEMBLER TO BINARY (OS LOADING)
+            log("Assembler: Converting to Machine Code (Binary)...");
+            assemblyDisplay.innerHTML = "";
+            const binaryString = "10110000 00001010 00000101 11000011"; // Fake binary
+            
+            // Animation: Text to Binary
+            let i = 0;
+            const ramContainer = document.getElementById('ram-view');
+            
+            // Fill mock RAM
+            for(let b = 0; b < 32; b++) {
+                let bit = document.createElement('div');
+                bit.className = 'bit-cell';
+                if(Math.random() > 0.5) bit.classList.add('active');
+                ramContainer.appendChild(bit);
+            }
+            log("OS Kernel: Loading Binary into RAM Address 0x004F...");
+            await wait(1000);
+
+            // STEP 3: CPU EXECUTION
+            const cu = document.getElementById('cu');
+            const alu = document.getElementById('alu');
+            const reg = document.getElementById('registers');
+
+            // Fetch
+            log("CPU: Fetching instruction from RAM...");
+            cu.style.borderColor = "#f38ba8";
+            cu.innerHTML = "Control Unit<br><span style='color:#f38ba8'>FETCHING</span>";
+            await wait(1000);
+
+            // Decode
+            log("CPU: Decoding instruction...");
+            cu.innerHTML = "Control Unit<br><span style='color:#f38ba8'>DECODING</span>";
+            await wait(800);
+            
+            // Execute
+            log(`CPU: Executing ADD ${val1} + ${val2}`);
+            alu.style.borderColor = "#f38ba8";
+            alu.innerHTML = `ALU<br><span style='color:#f38ba8'>CALCULATING</span>`;
+            
+            // Animate Registers
+            reg.innerHTML = `Registers<br><span style='color:#success'>AX: ${val1}</span>`;
+            await wait(500);
+            reg.innerHTML = `Registers<br><span style='color:#success'>AX: ${val1 + val2}</span>`;
+            
+            await wait(1000);
+
+            // STEP 4: HARDWARE LOGIC GATES
+            log("Hardware: Transistors switching...");
+            resetHardware(); // Ensure off first
+            
+            const wireA = document.getElementById('wire-a');
+            const wireB = document.getElementById('wire-b');
+            const wireOut = document.getElementById('wire-out');
+            const bulb = document.getElementById('transistor-bulb');
+
+            // Simulate electricity flow
+            wireA.classList.add('on');
+            await wait(300);
+            wireB.classList.add('on');
+            await wait(300);
+            wireOut.classList.add('on');
+            bulb.style.background = "#f38ba8";
+            bulb.style.boxShadow = "0 0 10px #f38ba8";
+            
+            log("Process Complete. Result stored in memory.");
+            cu.innerHTML = "Control Unit<br><span style='color:#fab387'>IDLE</span>";
+            alu.innerHTML = "ALU<br><span style='color:#fab387'>IDLE</span>";
+            
+        }
+
+        function resetHardware() {
+            document.getElementById('wire-a').classList.remove('on');
+            document.getElementById('wire-b').classList.remove('on');
+            document.getElementById('wire-out').classList.remove('on');
+            document.getElementById('transistor-bulb').style.background = "#45475a";
+            document.getElementById('transistor-bulb').style.boxShadow = "none";
+            document.getElementById('alu').style.borderColor = "#585b70";
+            document.getElementById('cu').style.borderColor = "#585b70";
+        }
+    </script>
+</body>
+</html>
