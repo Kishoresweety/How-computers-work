@@ -21,7 +21,7 @@ The worker that fetches these 1s and 0s and executes them.
 Transistors/Logic Gates: The microscopic switches that physically flip on and off to perform the math.
 
 ## Interactive Visualization
-### Live:  
+### Live:  https://kishoresweety.github.io/How-computers-work/
 open it in your browser. This tool allows you to write "code" and watch it travel through the Compiler, Memory (RAM), CPU, and finally down to the Logic Gates.
 
 Explaining the Process (What you just saw)
